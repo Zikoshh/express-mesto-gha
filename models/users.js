@@ -1,29 +1,34 @@
 const mongoose = require('mongoose');
 
-const userSchema = new mongoose.Schema({
-  name: {
-    required: {
-      value: true,
-      message: 'Поле name является обязательным',
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: {
+        value: true,
+        message: 'Поле name является обязательным',
+      },
+      minlength: 2,
+      maxlength: 30,
     },
-    minlength: 2,
-    maxlength: 30,
-  },
-  about: {
-    required: {
-      value: true,
-      message: 'Поле about является обязательным',
+    about: {
+      type: String,
+      required: {
+        value: true,
+        message: 'Поле about является обязательным',
+      },
+      minlength: 2,
+      maxlength: 30,
     },
-    minlength: 2,
-    maxlength: 30,
-  },
-  avatar: {
-    required: {
-      value: true,
-      message: 'Поле avatar является обязательным',
+    avatar: {
+      type: String,
+      required: {
+        value: true,
+        message: 'Поле avatar является обязательным',
+      },
     },
-    type: String,
   },
-});
+  { versionKey: false },
+);
 
 module.exports = mongoose.model('user', userSchema);

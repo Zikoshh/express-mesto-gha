@@ -1,43 +1,107 @@
 const User = require('../models/users');
 
-const getUsers = (req, res) => {
-  User.find({})
-    .then((users) => {
-      res.send(users);
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).send({ message: 'Произошла ошибка' });
-    });
-};
-const getUser = (req, res) => {
-  const { _id } = req.params.userId;
-
-  User.findById(_id)
-    .then((user) => {
-      res.send(user);
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).send({ message: 'Произошла ошибка' });
-    });
+const getUsers = async (req, res) => {
+  try {
+    const users = await User.find({});
+    return res.send(users);
+  } catch (err) {
+    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+  }
 };
 
-const createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
+const getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.userId);
 
-  User.create(name, about, avatar)
-    .then((user) => {
-      res.send(user);
-    })
-    .catch((err) => {
-      console.log(err);
-      res.status(500).send({ message: 'Произошла ошибка' });
-    });
+    if (!user) {
+      throw new Error('NotFound');
+    }
+    return res.send(user);
+  } catch (err) {
+    if (err.message === 'NotFound') {
+      return res
+        .status(404)
+        .send({ message: 'Пользователь с указанным id не найден' });
+    }
+
+    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+  }
+};
+
+const createUser = async (req, res) => {
+  try {
+    const newUser = await new User(req.body);
+
+    return res.status(201).send(await newUser.save());
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      return res.status(400).send({ message: `${err.message}` });
+    }
+
+    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+  }
+};
+
+const updateInfo = async (req, res) => {
+  try {
+    const newUserData = await User.findByIdAndUpdate(
+      req.user._id,
+      req.body,
+      { new: true, runValidators: true },
+    );
+
+    if (!newUserData) {
+      throw new Error('NotFound');
+    }
+
+    return res.status(200).send(newUserData);
+  } catch (err) {
+    if (err.message === 'NotFound') {
+      return res
+        .status(404)
+        .send({ message: 'Пользователь с указанным id не найден' });
+    }
+
+    if (err.name === 'ValidationError') {
+      return res.status(400).send({ message: `${err.message}` });
+    }
+
+    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+  }
+};
+
+const updateAvatar = async (req, res) => {
+  try {
+    const newUserData = await User.findByIdAndUpdate(
+      req.user._id,
+      req.body,
+      { new: true, runValidators: true },
+    );
+
+    if (!newUserData) {
+      throw new Error('NotFound');
+    }
+
+    return res.status(200).send(newUserData);
+  } catch (err) {
+    if (err.message === 'NotFound') {
+      return res
+        .status(404)
+        .send({ message: 'Пользователь с указанным id не найден' });
+    }
+
+    if (err.name === 'ValidationError') {
+      return res.status(400).send({ message: `${err.message}` });
+    }
+
+    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+  }
 };
 
 module.exports = {
   getUsers,
-  getUser,
+  getUserById,
   createUser,
+  updateInfo,
+  updateAvatar,
 };
