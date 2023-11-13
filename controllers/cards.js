@@ -40,6 +40,10 @@ const deleteCardById = async (req, res) => {
         .status(404)
         .send({ message: 'Карточка с указанным id не найдена' });
     }
+
+    if (err.name === 'CastError') {
+      return res.status(400).send({ message: 'Передано невалидное id карточки' });
+    }
   }
 };
 
