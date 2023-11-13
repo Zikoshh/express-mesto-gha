@@ -24,6 +24,10 @@ const getUserById = async (req, res) => {
         .send({ message: 'Пользователь с указанным id не найден' });
     }
 
+    if (err.name === 'CastError') {
+      return res.status(400).send({ message: 'Передан невалидный id' });
+    }
+
     return res.status(500).send({ message: 'Извините, что-то пошло не так' });
   }
 };
