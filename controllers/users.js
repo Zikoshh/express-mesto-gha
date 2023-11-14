@@ -28,7 +28,7 @@ const getUserById = async (req, res) => {
       return res.status(400).send({ message: 'Передан невалидный id' });
     }
 
-    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+    return res.status(500).send({ message: 'На сервере произошла ошибка' });
   }
 };
 
@@ -42,7 +42,7 @@ const createUser = async (req, res) => {
       return res.status(400).send({ message: `${err.message}` });
     }
 
-    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+    return res.status(500).send({ message: 'На сервере произошла ошибка' });
   }
 };
 
@@ -70,7 +70,7 @@ const updateInfo = async (req, res) => {
       return res.status(400).send({ message: `${err.message}` });
     }
 
-    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+    return res.status(500).send({ message: 'На сервере произошла ошибка' });
   }
 };
 
@@ -98,7 +98,7 @@ const updateAvatar = async (req, res) => {
       return res.status(400).send({ message: `${err.message}` });
     }
 
-    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+    return res.status(500).send({ message: 'На сервере произошла ошибка' });
   }
 };
 
