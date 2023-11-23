@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const cookieParser = require('cookie-parser');
+const { errors } = require('celebrate');
 const errorHandler = require('./middlewares/errorHandler');
 require('dotenv').config();
 const routes = require('./routes');
@@ -23,5 +24,6 @@ app.use(limitter);
 app.use(cookieParser());
 
 app.use(routes);
+app.use(errors());
 app.use(errorHandler);
 app.listen(PORT);
