@@ -40,7 +40,7 @@ const deleteCardById = async (req, res, next) => {
       return next(new InsufficientPermissionsError('Недостаточно прав для удаления чужой карточки'));
     }
 
-    Card.findByIdAndDelete(req.params.cardId).orFail(
+    await Card.findByIdAndDelete(req.params.cardId).orFail(
       () => next(new NotFoundError('Карточка с указанным id не найдена')),
     );
 

@@ -24,7 +24,13 @@ const getUserById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.userId).orFail(() => next(new NotFoundError('Пользователь с указанным id не найден')));
 
-    return res.send(user);
+    return res.send({
+      _id: user._id,
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    });
   } catch (err) {
     if (err instanceof CastError) {
       return next(new BadRequestError('Передан невалидный id'));
@@ -36,9 +42,15 @@ const getUserById = async (req, res, next) => {
 
 const getUserByJwt = async (req, res, next) => {
   try {
-    const userInfo = await User.findById(req.user._id).orFail(() => next(new NotFoundError('Пользователя нету в базе данных')));
+    const user = await User.findById(req.user._id).orFail(() => next(new NotFoundError('Пользователя нету в базе данных')));
 
-    res.send(userInfo);
+    res.send({
+      _id: user._id,
+      name: user.name,
+      about: user.about,
+      avatar: user.avatar,
+      email: user.email,
+    });
   } catch (err) {
     return next(err);
   }
@@ -47,10 +59,11 @@ const getUserByJwt = async (req, res, next) => {
 const createUser = async (req, res, next) => {
   try {
     const hash = await bcrypt.hash(req.body.password, SOLT_ROUNDS);
-    await new User({ email: req.body.email, password: hash }).save();
-    return res
-      .status(HTTP_SUCCES_CREATED_CODE)
-      .send({ message: 'Успешная регистрация' });
+    const newUser = await new User({
+      email: req.body.email,
+      password: hash,
+    }).save();
+    return res.status(HTTP_SUCCES_CREATED_CODE).send({ email: newUser.email });
   } catch (err) {
     if (err.code === MONGO_DUPLICATE_ERROR_CODE) {
       return next(new DuplicateError('Такой пользователь уже существует'));
