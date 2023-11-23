@@ -24,13 +24,7 @@ const getUserById = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.userId).orFail(() => next(new NotFoundError('Пользователь с указанным id не найден')));
 
-    return res.send({
-      _id: user._id,
-      name: user.name,
-      about: user.about,
-      avatar: user.avatar,
-      email: user.email,
-    });
+    return res.send(user);
   } catch (err) {
     if (err instanceof CastError) {
       return next(new BadRequestError('Передан невалидный id'));
@@ -44,13 +38,7 @@ const getUserByJwt = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id).orFail(() => next(new NotFoundError('Пользователя нету в базе данных')));
 
-    res.send({
-      _id: user._id,
-      name: user.name,
-      about: user.about,
-      avatar: user.avatar,
-      email: user.email,
-    });
+    res.send(user);
   } catch (err) {
     return next(err);
   }
@@ -63,7 +51,14 @@ const createUser = async (req, res, next) => {
       email: req.body.email,
       password: hash,
     }).save();
-    return res.status(HTTP_SUCCES_CREATED_CODE).send({ email: newUser.email });
+    return res
+      .status(HTTP_SUCCES_CREATED_CODE)
+      .send({
+        name: newUser.name,
+        about: newUser.about,
+        avatar: newUser.avatar,
+        email: newUser.email,
+      });
   } catch (err) {
     if (err.code === MONGO_DUPLICATE_ERROR_CODE) {
       return next(new DuplicateError('Такой пользователь уже существует'));
