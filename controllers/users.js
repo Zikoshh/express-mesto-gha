@@ -62,31 +62,29 @@ const createUser = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    console.log('loh1');
     const userInfo = await User.findOne({ email: req.body.email })
       .select('+password')
       .orFail(() => next(new UnAuthorizedError('Неверные email или password')));
 
-    console.log('loh2');
     const matched = await bcrypt.compare(
       String(req.body.password),
       userInfo.password,
     );
-    console.log('loh3');
+
     if (!matched) {
       return next(new UnAuthorizedError('Неверные email или password'));
     }
-    console.log('loh4');
+
     const token = generateJwtToken({
       _id: userInfo._id,
     });
-    console.log('loh5');
+
     res.cookie('jwt', token, {
       httpOnly: true,
       sameSite: true,
       maxAge: 3600000 * 24 * 7,
     });
-    console.log('loh6');
+
     res.send({ email: userInfo.email });
   } catch (err) {
     return next(err);
