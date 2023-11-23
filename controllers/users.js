@@ -1,111 +1,135 @@
+const { ValidationError, CastError } = require('mongoose').Error;
+const bcrypt = require('bcrypt');
 const User = require('../models/users');
+const generateJwtToken = require('../utils/auth');
+const BadRequestError = require('../errors/BadRequestError');
+const DuplicateError = require('../errors/DuplicateError');
+const NotFoundError = require('../errors/NotFoundError');
+const UnAuthorizedError = require('../errors/UnAuthorizedError');
 
-const getUsers = async (req, res) => {
+const SOLT_ROUNDS = 10;
+const HTTP_SUCCES_CREATED_CODE = 201;
+const MONGO_DUPLICATE_ERROR_CODE = 11000;
+
+const getUsers = async (req, res, next) => {
   try {
     const users = await User.find({});
     return res.send(users);
   } catch (err) {
-    return res.status(500).send({ message: 'Извините, что-то пошло не так' });
+    return next(err);
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserById = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.userId);
+    const user = await User.findById(req.params.userId).orFail(() => next(new NotFoundError('Пользователь с указанным id не найден')));
 
-    if (!user) {
-      throw new Error('NotFound');
-    }
     return res.send(user);
   } catch (err) {
-    if (err.message === 'NotFound') {
-      return res
-        .status(404)
-        .send({ message: 'Пользователь с указанным id не найден' });
+    if (err instanceof CastError) {
+      return next(new BadRequestError('Передан невалидный id'));
     }
 
-    if (err.name === 'CastError') {
-      return res.status(400).send({ message: 'Передан невалидный id' });
-    }
-
-    return res.status(500).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 };
 
-const createUser = async (req, res) => {
+const getUserByJwt = async (req, res, next) => {
   try {
-    const newUser = await new User(req.body);
+    const userInfo = await User.findById(req.user._id).orFail(() => next(new NotFoundError('Пользователя нету в базе данных')));
 
-    return res.status(201).send(await newUser.save());
+    res.send(userInfo);
   } catch (err) {
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: `${err.message}` });
-    }
-
-    return res.status(500).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 };
 
-const updateInfo = async (req, res) => {
+const createUser = async (req, res, next) => {
   try {
-    const newUserData = await User.findByIdAndUpdate(
-      req.user._id,
-      req.body,
-      { new: true, runValidators: true },
+    const hash = await bcrypt.hash(req.body.password, SOLT_ROUNDS);
+    await new User({ email: req.body.email, password: hash }).save();
+    return res
+      .status(HTTP_SUCCES_CREATED_CODE)
+      .send({ message: 'Успешная регистрация' });
+  } catch (err) {
+    if (err.code === MONGO_DUPLICATE_ERROR_CODE) {
+      return next(new DuplicateError('Такой пользователь уже существует'));
+    }
+
+    return next(err);
+  }
+};
+
+const login = async (req, res, next) => {
+  try {
+    const userInfo = await User.findOne({ email: req.body.email })
+      .select('+password')
+      .orFail(() => next(new UnAuthorizedError('Неверные email или password')));
+
+    const matched = await bcrypt.compare(
+      String(req.body.password),
+      userInfo.password,
     );
-
-    if (!newUserData) {
-      throw new Error('NotFound');
+    if (!matched) {
+      return next(new UnAuthorizedError('Неверные email или password'));
     }
 
-    return res.status(200).send(newUserData);
+    const token = generateJwtToken({
+      _id: userInfo._id,
+    });
+
+    res.cookie('jwt', token, {
+      httpOnly: true,
+      sameSite: true,
+      maxAge: 3600000 * 24 * 7,
+    });
+
+    res.send({ email: userInfo.email });
   } catch (err) {
-    if (err.message === 'NotFound') {
-      return res
-        .status(404)
-        .send({ message: 'Пользователь с указанным id не найден' });
-    }
-
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: `${err.message}` });
-    }
-
-    return res.status(500).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 };
 
-const updateAvatar = async (req, res) => {
+const updateInfo = async (req, res, next) => {
   try {
-    const newUserData = await User.findByIdAndUpdate(
-      req.user._id,
-      req.body,
-      { new: true, runValidators: true },
-    );
+    const newUserData = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+      runValidators: true,
+    }).orFail(() => next(new NotFoundError('Пользователь с указанным id не найден')));
 
-    if (!newUserData) {
-      throw new Error('NotFound');
-    }
-
-    return res.status(200).send(newUserData);
+    return res.send(newUserData);
   } catch (err) {
-    if (err.message === 'NotFound') {
-      return res
-        .status(404)
-        .send({ message: 'Пользователь с указанным id не найден' });
+    if (err instanceof ValidationError) {
+      return next(new BadRequestError(err.message));
     }
 
-    if (err.name === 'ValidationError') {
-      return res.status(400).send({ message: `${err.message}` });
+    return next(err);
+  }
+};
+
+const updateAvatar = async (req, res, next) => {
+  try {
+    const newUserData = await User.findByIdAndUpdate(req.user._id, req.body, {
+      new: true,
+      runValidators: true,
+    }).orFail(() => next(new NotFoundError('Пользователь с указанным id не найден')));
+
+    return res.send(newUserData);
+  } catch (err) {
+    if (err instanceof ValidationError) {
+      return next(new BadRequestError(err.message));
     }
 
-    return res.status(500).send({ message: 'На сервере произошла ошибка' });
+    return next(err);
   }
 };
 
 module.exports = {
   getUsers,
   getUserById,
+  getUserByJwt,
   createUser,
+  login,
   updateInfo,
   updateAvatar,
 };
