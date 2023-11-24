@@ -21,7 +21,7 @@ const createUserValidation = celebrate({
 
 const getUserByIdValidation = celebrate({
   params: Joi.object().keys({
-    userId: Joi.string().required().length(24),
+    userId: Joi.string().length(24).hex().required(),
   }),
 });
 
@@ -47,19 +47,19 @@ const createCardValidation = celebrate({
 
 const deleteCardByIdValidation = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().required().length(24),
+    cardId: Joi.string().length(24).hex().required(),
   }),
 });
 
 const likeCardValidation = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().required().length(24),
+    cardId: Joi.string().length(24).hex().required(),
   }),
 });
 
 const dislikeCardValidation = celebrate({
   params: Joi.object().keys({
-    cardId: Joi.string().required().length(24),
+    cardId: Joi.string().length(24).hex().required(),
   }),
 });
 
